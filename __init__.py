@@ -93,6 +93,6 @@ def center_of_mass(contour):
 def find_contour(bwimg):
     storage = cv.CreateMemStorage(0)
     contour = cv.FindContours(bwimg,
-                    storage,cv.CV_RETR_TREE,
+                    storage,cv.CV_RETR_LIST,
                     cv.CV_CHAIN_APPROX_SIMPLE)
     return contour
