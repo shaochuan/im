@@ -7,6 +7,25 @@
 
 import cv
 
+class Font(object):
+    pass
+
+class Color(object):
+    pass
+
+font = Font()
+font.default = cv.InitFont(cv.CV_FONT_HERSHEY_DUPLEX, 1, 1, thickness=2)
+font.small = cv.InitFont(cv.CV_FONT_HERSHEY_DUPLEX, 0.5, 0.7, thickness=1)
+font.tiny = cv.InitFont(cv.CV_FONT_HERSHEY_DUPLEX, 0.2, 0.4, thickness=1)
+
+color = Color()
+color.red = (0,0,255)
+color.green = (0,255,0)
+color.darkgreen = (0,128,0)
+color.blue = (255,0,0)
+color.cyan = (255,255,0)
+color.yellow = (0,255,255)
+color.purple = (255,0,255)
 
 def clone(src, _type):
     """
@@ -35,8 +54,14 @@ def newgray(cvimg_or_size):
     if isinstance(cvimg_or_size, (tuple, list)):
         size = tuple(cvimg_or_size)
     else:
-        size = (cvimg_or_size.width, cvimg_or_size.height)
+        size = cv.GetSize(cvimg)
     return cv.CreateImage(size, cv.IPL_DEPTH_8U, 1)
+
+def resize(cvimg, newsize):
+    size = cv.GetSize(cvimg)
+    newimg = cv.CreateImage(newsize, cvimg.depth, cvimg.channels)
+    cv.Resize(cvimg, newimg)
+    return newimg
 
 def split3(src):
     if src.nChannels != 3:
@@ -57,29 +82,10 @@ def split4(src):
     cv.Split(src, b, g, r, a)
     return b,g,r,a
 
-
-class Font(object):
-    pass
-
-class Color(object):
-    pass
-
-font = Font()
-font.default = cv.InitFont(cv.CV_FONT_HERSHEY_DUPLEX, 1, 1, thickness=2)
-font.small = cv.InitFont(cv.CV_FONT_HERSHEY_DUPLEX, 0.5, 0.7, thickness=1)
-font.tiny = cv.InitFont(cv.CV_FONT_HERSHEY_DUPLEX, 0.2, 0.4, thickness=1)
-
-color = Color()
-color.red = (0,0,255)
-color.green = (0,255,0)
-color.darkgreen = (0,128,0)
-color.blue = (255,0,0)
-color.cyan = (255,255,0)
-color.yellow = (0,255,255)
-color.purple = (255,0,255)
-
 def drawtext(img, text, x, y, font=font.default, color=color.red):
     cv.PutText(img, text, (x,y), font, color)
+
+
 
 def center_of_mass(contour):
     moment = cv.Moments(contour)
