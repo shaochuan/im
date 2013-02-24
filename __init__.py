@@ -5,7 +5,7 @@
     @author: Shao-Chuan Wang (sw2644 at columbia.edu)
 '''
 
-import cv
+import cv, cv2, numpy
 
 class Font(object):
     pass
@@ -27,29 +27,46 @@ color.cyan = (255,255,0)
 color.yellow = (0,255,255)
 color.purple = (255,0,255)
 
-def clone(src, _type):
+depth_map = {
+        cv.IPL_DEPTH_8U : numpy.uint8,
+        cv.IPL_DEPTH_16U : numpy.uint16
+        }
+
+def clone(iplimage, _type):
     """
         Clone the image.
         @param _type: a string, and it can be one of the following:
             "gray2bgr"
-        @returns: the cloned image
+        @returns: the cloned IplImage
     """
     if _type.lower() == "gray2bgr":
-        ret = cv.CreateImage((src.width, src.height), cv.IPL_DEPTH_8U, 3)
-        r = cv.CloneImage(src)
-        g = cv.CloneImage(src)
-        b = cv.CloneImage(src)
+        ret = cv.CreateImage((iplimage.width, iplimage.height), cv.IPL_DEPTH_8U, 3)
+        r = cv.CloneImage(iplimage)
+        g = cv.CloneImage(iplimage)
+        b = cv.CloneImage(iplimage)
         cv.Merge(r,g,b,None,ret)
         return ret
     else:
         raise ValueError("Unknown _type value.")
 
-def paste(img, canvas, x, y):
+def paste(iplimage, canvas, x, y):
+    """
+        Paste the image. Canvas image will be modified.
+        @param iplimage: the image to be pasted.
+        @param canvas: the canvas to be pasted to.
+        @x, y: the coordinate to be pasted at.
+        @returns: None
+    """
     cv.SetImageROI(canvas, (x,y,x+img.width,y+img.height))
     cv.Copy(img, canvas)
     cv.ResetImageROI(canvas)
 
 def newgray(cvimg_or_size):
+    """
+        Create a new iplimage with single channel.
+        @param cvimg_or_size: an iplimage or a tuple representing the size.
+        @returns: IplImage.
+    """
     size = None
     if isinstance(cvimg_or_size, (tuple, list)):
         size = tuple(cvimg_or_size)
@@ -57,35 +74,53 @@ def newgray(cvimg_or_size):
         size = cv.GetSize(cvimg)
     return cv.CreateImage(size, cv.IPL_DEPTH_8U, 1)
 
-def resize(cvimg, newsize):
-    size = cv.GetSize(cvimg)
-    newimg = cv.CreateImage(newsize, cvimg.depth, cvimg.channels)
-    cv.Resize(cvimg, newimg)
+def resize(iplimage, newsize):
+    """
+        Create a new IplImage with the new image size.
+        @param ipliamge: the original IplImage.
+        @param newsize: the new image size.
+        @returns: a new IplImage.
+    """
+    size = cv.GetSize(iplimage)
+    newimg = cv.CreateImage(newsize, iplimage.depth, iplimage.channels)
+    cv.Resize(iplimage, newimg)
     return newimg
 
-def split3(src):
-    if src.nChannels != 3:
+def split3(iplimage):
+    if iplimage.nChannels != 3:
        raise ValueError("The channel is not consistent.")
-    b = cv.CreateImage((src.width, src.height), cv.IPL_DEPTH_8U, 1)
-    g = cv.CreateImage((src.width, src.height), cv.IPL_DEPTH_8U, 1)
-    r = cv.CreateImage((src.width, src.height), cv.IPL_DEPTH_8U, 1)
-    cv.Split(src, b, g, r, None)
+    b = cv.CreateImage((iplimage.width, iplimage.height), cv.IPL_DEPTH_8U, 1)
+    g = cv.CreateImage((iplimage.width, iplimage.height), cv.IPL_DEPTH_8U, 1)
+    r = cv.CreateImage((iplimage.width, iplimage.height), cv.IPL_DEPTH_8U, 1)
+    cv.Split(iplimage, b, g, r, None)
     return b,g,r
 
-def split4(src):
-    if src.nChannels != 4:
+def split4(iplimage):
+    if iplimage.nChannels != 4:
         raise ValueError("The channel is not consistent.")
-    b = cv.CreateImage((src.width, src.height), cv.IPL_DEPTH_8U, 1)
-    g = cv.CreateImage((src.width, src.height), cv.IPL_DEPTH_8U, 1)
-    r = cv.CreateImage((src.width, src.height), cv.IPL_DEPTH_8U, 1)
-    a = cv.CreateImage((src.width, src.height), cv.IPL_DEPTH_8U, 1)
-    cv.Split(src, b, g, r, a)
+    b = cv.CreateImage((iplimage.width, iplimage.height), cv.IPL_DEPTH_8U, 1)
+    g = cv.CreateImage((iplimage.width, iplimage.height), cv.IPL_DEPTH_8U, 1)
+    r = cv.CreateImage((iplimage.width, iplimage.height), cv.IPL_DEPTH_8U, 1)
+    a = cv.CreateImage((iplimage.width, iplimage.height), cv.IPL_DEPTH_8U, 1)
+    cv.Split(iplimage, b, g, r, a)
     return b,g,r,a
+
+
+def to_npimage(iplimage):
+    width, height = cv.GetSize(iplimage)
+    shape = (height, width, iplimage.channels)
+    nparray = numpy.fromstring(iplimage.tostring(),
+                               dtype=depth_map[iplimage.depth])
+    npimage = nparray.reshape(shape)
+    return npimage
+
+def imgray(iplimage):
+    npgray = cv2.cvtColor(to_npimage(iplimage),
+                          cv.CV_RGB2GRAY)
+    return cv.fromarray(npgray)
 
 def drawtext(img, text, x, y, font=font.default, color=color.red):
     cv.PutText(img, text, (x,y), font, color)
-
-
 
 def center_of_mass(contour):
     moment = cv.Moments(contour)
