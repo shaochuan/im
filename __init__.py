@@ -68,6 +68,7 @@ def stitch_stacking(iplimg1, iplimg2):
     total_height = iplimg1.height + iplimg2.height
     size = (total_width, total_height)
     iplimage = cv.CreateImage(size, iplimg1.depth, iplimg1.channels)
+    cv.SetZero(iplimage)
     paste(iplimg1, iplimage, 0, 0)
     paste(iplimg2, iplimage, 0, iplimg1.height)
     return iplimage
