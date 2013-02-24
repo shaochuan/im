@@ -57,9 +57,20 @@ def paste(iplimage, canvas, x, y):
         @x, y: the coordinate to be pasted at.
         @returns: None
     """
-    cv.SetImageROI(canvas, (x,y,x+img.width,y+img.height))
-    cv.Copy(img, canvas)
+    cv.SetImageROI(canvas, (x, y, x+iplimage.width, y+iplimage.height))
+    cv.Copy(iplimage, canvas)
     cv.ResetImageROI(canvas)
+
+def stitch_stacking(iplimg1, iplimg2):
+    assert iplimg1.depth == iplimg2.depth
+    assert iplimg2.channels == iplimg2.channels
+    total_width = max(iplimg1.width, iplimg2.width)
+    total_height = iplimg1.height + iplimg2.height
+    size = (total_width, total_height)
+    iplimage = cv.CreateImage(size, iplimg1.depth, iplimg1.channels)
+    paste(iplimg1, iplimage, 0, 0)
+    paste(iplimg2, iplimage, 0, iplimg1.height)
+    return iplimage
 
 def newgray(cvimg_or_size):
     """
@@ -105,7 +116,6 @@ def split4(iplimage):
     cv.Split(iplimage, b, g, r, a)
     return b,g,r,a
 
-
 def to_npimage(iplimage):
     width, height = cv.GetSize(iplimage)
     shape = (height, width, iplimage.channels)
@@ -117,7 +127,7 @@ def to_npimage(iplimage):
 def imgray(iplimage):
     npgray = cv2.cvtColor(to_npimage(iplimage),
                           cv.CV_RGB2GRAY)
-    return cv.fromarray(npgray)
+    return cv.GetImage(cv.fromarray(npgray))
 
 def drawtext(img, text, x, y, font=font.default, color=color.red):
     cv.PutText(img, text, (x,y), font, color)
@@ -137,3 +147,16 @@ def find_contour(bwimg):
                     storage,cv.CV_RETR_LIST,
                     cv.CV_CHAIN_APPROX_SIMPLE)
     return contour
+
+def extract_sift(iplimage):
+    gray = iplimage
+    if iplimage.channels > 1:
+        gray = imgray(iplimage)
+    assert gray.channels == 1, "expecting 'gray' to be single channel image."
+    npgray = to_npimage(gray)
+    sift = cv2.SIFT()#contrastThreshold=0.1, edgeThreshold=50)
+    keypoints = sift.detect(npgray)
+    desc = cv2.DescriptorExtractor_create('SIFT')
+    descriptors = desc.compute(npgray, keypoints)
+    return descriptors
+
